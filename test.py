@@ -1,10 +1,28 @@
-CITY = "beijing" #beijing-530 , tianjing-531 , dalian-600 , qingdao-703
+from config import *
+import random
+import requests
+from bs4 import BeautifulSoup
+import time
 
-DIANPING_URL='localhost'
-DIANPING_DB="Dianping-"+CITY
-DIANPING_TABLE="meishi"
+headers = {"Accept": "text/html,application/xhtml+xml,application/xml;",
+            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6",
+            "Referer": "http://www.dianping.com/beijing/food",
+            "User-Agent": 'Opera/9.25 (Windows NT 6.0; U; en)  '
+            }
+cookies ={
+    "_hc.v":"55a41e93-74c2-42ac-54db-244bcc764832.1513404921"
+}
 
-USER_AGENTS = [
+url = "http://www.dianping.com/search/category/2/10/g508r9157"
+# proxy = {"http":"http://10,119,134,15:80"}
+response = requests.get(url,headers=headers).content
+print(response)
+# soup = BeautifulSoup(response,'lxml')
+# page =soup.find("div",class_="page").find_all("a",class_="PageLink")[-1].get_text()
+# print(page)
+
+
+usa =[
     'Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/534.14 (KHTML, like Gecko) Chrome/9.0.601.0 Safari/534.14 ',
     'Mozilla/5.0 (Windows NT 6.0) AppleWebKit/535.2 (KHTML, like Gecko) Chrome/15.0.874.120 Safari/535.2',
     'Mozilla/5.0 (Windows; U; Windows NT 6.0 x64; en-US; rv:1.9pre) Gecko/2008072421 Minefield/3.0.2pre ',
@@ -16,3 +34,10 @@ USER_AGENTS = [
     "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0) ",
     "Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 6.0; Trident/4.0) ",
     "Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0) "]
+
+
+
+
+
+
+

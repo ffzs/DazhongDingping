@@ -13,17 +13,6 @@ from bs4 import BeautifulSoup
 import pymongo
 import json
 
-uas = [
-    "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:56.0) Gecko/20100101 Firefox/56.0",
-    "Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9b4) Gecko/2008030317 Firefox/3.0b4",
-    "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/62.0.3202.94 Safari/537.36",
-    "Mozilla/5.0 (Windows; U; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 2.0.50727; BIDUBrowser 7.6)",
-    "Mozilla/5.0 (Windows NT 6.3; WOW64; Trident/7.0; rv:11.0) like Gecko",
-    "Mozilla/5.0 (Windows NT 6.3; WOW64; rv:46.0) Gecko/20100101 Firefox/46.0",
-    "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.99 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.3; Win64; x64; Trident/7.0; Touch; LCJB; rv:11.0) like Gecko",
-    ]
-
 client = pymongo.MongoClient(DIANPING_URL,connect=False)
 db=client[DIANPING_DB]
 
@@ -99,15 +88,16 @@ def crawl(url, ip_list):
         return False
     else:
         proxies = ip
+        usa = random.choice(USER_AGENTS)
         headers2 = {"Accept": "text/html,application/xhtml+xml,application/xml;",
                     'Cookie': '_lxsdk_cuid=1605e0182a1c8-0dcddc996964e2-5b452a1d-144000-1605e0182a1c8; _lxsdk=1605e0182a1c8-0dcddc996964e2-5b452a1d-144000-1605e0182a1c8; _hc.v=4fcafd03-8373-d150-6954-d7986b392b47.1513405645; s_ViewType=10; cy=2; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; _lxsdk_s=16064b2eea8-a3f-e63-0fe%7C%7C30',
                     "Accept-Encoding": "gzip, deflate, sdch",
                     "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6",
                     "Referer": "http://www.dianping.com/beijing/food",
-                    "User-Agent": random.choice(uas),
+                    "User-Agent": usa,
                     }
     try:
-        response = requests.get(url, headers=headers2,proxies=proxies,timeout=2)
+        response = requests.get(url, headers=headers2,proxies=proxies,timeout=5)
         html = response.text
         soup = BeautifulSoup(html, "lxml")
         all_txt = soup.find_all("div", class_="txt")
@@ -146,12 +136,12 @@ def crawl(url, ip_list):
                     "环境": environment,
                     "服务": service,
                 }
-                if lock.acquire():
-                    save_to_mongo(total)
-                    with open("dz_.txt", "a") as file:
-                        file.write(json.dumps(ip) + "\n")
-                        file.close()
-                    lock.release()
+                lock.acquire()
+                save_to_mongo(total)
+                with open("dz_.txt", "a") as file:
+                    file.write(json.dumps(ip) + "\n")
+                    file.close()
+                lock.release()
             except Exception as e:
                 print(e)
                 pass
@@ -167,9 +157,12 @@ def crawl(url, ip_list):
         crawl(url, ip_list)
     else:
         print(str(ip) + "可用###剩余ip数：" + str(len(ip_list)) + "###网络状态：" + str(response.status_code))
-        if response.status_code!=200:
-            if ip in ip_list:
-                ip_list.remove(ip)
+        print(usa)
+        if response.status_code==403:
+            crawl(url, ip_list)
+            # pass
+            # if ip in ip_list:
+            #     ip_list.remove(ip)
 
 
 def get_type_list(file):
@@ -189,22 +182,40 @@ def get_ip_text(file):
             pass
     return ip_list
 
-if __name__ == '__main__':
+def get_page(url):
     headers = {
-        'Referer': 'http://www.kuaidaili.com/free/intr/',
-        'User-Agent': random.choice(USER_AGENTS)
-    }
+                'Cookie': '_lxsdk_cuid=1605e0182a1c8-0dcddc996964e2-5b452a1d-144000-1605e0182a1c8; _lxsdk=1605e0182a1c8-0dcddc996964e2-5b452a1d-144000-1605e0182a1c8; _hc.v=4fcafd03-8373-d150-6954-d7986b392b47.1513405645; s_ViewType=10; cy=2; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; _lxsdk_s=16064b2eea8-a3f-e63-0fe%7C%7C30',
+                "Referer": "http://www.dianping.com/beijing/food",
+                "User-Agent":'Opera/9.25 (Windows NT 6.0; U; en)' ,
+                }
+    time.sleep(2)
+    try:
+        response = requests.get(url, headers=headers).text
+        soup = BeautifulSoup(response, 'lxml')
+        page = soup.find("div", class_="page").find_all("a", class_="PageLink")[-1].get_text()
+        return page
+    except:
+        return False
+
+if __name__ == '__main__':
     lock = threading.Lock()
     IP_LIST =get_ip_text("dz_dianping.txt")
     type_list = get_type_list("dianping_meishi.txt")
+    local_list = get_type_list("meishi.txt")
     # type_list = list(reversed(type_list))
-    print(type_list)
+    # print(local_list)
     for type in type_list:
-        for page in range(1, 51):
-            url = "http:" + type + "o2p" + str(page)
-            t1 = threading.Thread(target=crawl, args=(url, IP_LIST))
-            t1.start()
-            time.sleep(1)
+        for local in local_list:
+            url_a = "http:" + type +"r"+local
+            page = get_page(url_a)
+            if page:
+                print(page)
+                for page in range(1, int(page)+1):
+                    url = "http:" + type +"r"+local+"o2p" + str(page)
+                    crawl(url,IP_LIST)
+                    # t1 = threading.Thread(target=crawl, args=(url, IP_LIST))
+                    # t1.start()
+                    # time.sleep(0.1)
     # for i in range(1,1000):
     #     t1 = threading.Thread(target=test_ip, args=(i, IP_LIST))
     #     t1.start()
