@@ -4,19 +4,47 @@ import requests
 from bs4 import BeautifulSoup
 import time
 
-headers = {"Accept": "text/html,application/xhtml+xml,application/xml;",
-            "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6",
-            "Referer": "http://www.dianping.com/beijing/food",
-            "User-Agent": 'Opera/9.25 (Windows NT 6.0; U; en)  '
-            }
-cookies ={
-    "_hc.v":"55a41e93-74c2-42ac-54db-244bcc764832.1513404921"
-}
+usa1= [
+"Mozilla/5.0 (Linux; U; Android 4.1.1; ja-jp; Galaxy Nexus Build/JRO03H) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 Mobile Safari/534.30 ,",
+'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/9A334 Safari/7534.48.3 ',
+'Mozilla/5.0 (iPhone; CPU iPhone OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/9A405 Safari/7534.48.3 ',
+'Mozilla/5.0 (iPod; CPU iPhone OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A405 Safari/7534.48.3 ',
+'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_1_1 like Mac OS X; da-dk) AppleWebKit/534.46.0 (KHTML, like Gecko) CriOS/19.0.1084.60 Mobile/9B206 Safari/7534.48.3'
+]
+usa_list=[]
+with open("number.txt") as f:
+    for line in f:
+        usa_list.append(line.strip())
+print(usa_list)
 
-url = "http://www.dianping.com/search/category/2/10/g508r9157"
-# proxy = {"http":"http://10,119,134,15:80"}
-response = requests.get(url,headers=headers).content
-print(response)
+usa_list.extend(usa1)
+
+
+user_agent =[]
+for u in usa1:
+    headers = {"Accept": "text/html,application/xhtml+xml,application/xml;",
+                "Accept-Language": "zh-CN,zh;q=0.8,en;q=0.6",
+                "Referer": "http://www.dianping.com/beijing/food",
+                "User-Agent":u
+                }
+    cookies ={
+        "_hc.v":"55a41e93-74c2-42ac-54db-244bcc764832.1513404921"
+    }
+
+    url = "http://www.dianping.com/search/category/2/10/g508r9157"
+    # proxy = {"http":"http://10,119,134,15:80"}
+    try:
+        response = requests.get(url,headers=headers)
+        print(response.text)
+
+        time.sleep(2)
+    except Exception as e:
+        print(e)
+
+    else:
+        if response.status_code == 200:
+            user_agent.append(u)
+print(user_agent)
 # soup = BeautifulSoup(response,'lxml')
 # page =soup.find("div",class_="page").find_all("a",class_="PageLink")[-1].get_text()
 # print(page)
@@ -37,7 +65,12 @@ usa =[
 
 
 
-
+usa1= [
+'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_0 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/9A334 Safari/7534.48.3 ',
+'Mozilla/5.0 (iPhone; CPU iPhone OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Mobile/9A405 Safari/7534.48.3 ',
+'Mozilla/5.0 (iPod; CPU iPhone OS 5_0_1 like Mac OS X) AppleWebKit/534.46 (KHTML, like Gecko) Version/5.1 Mobile/9A405 Safari/7534.48.3 ',
+'Mozilla/5.0 (iPhone; U; CPU iPhone OS 5_1_1 like Mac OS X; da-dk) AppleWebKit/534.46.0 (KHTML, like Gecko) CriOS/19.0.1084.60 Mobile/9B206 Safari/7534.48.3'
+]
 
 
 

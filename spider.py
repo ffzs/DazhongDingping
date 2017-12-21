@@ -44,7 +44,7 @@ def get_ip_kuai(page):
     for page in range(1,page):
         print("-------获取第"+str(page)+"页ip--------")
         url = "http://www.kuaidaili.com/free/intr/"+str(page)+"/"
-        response = requests.get(url,headers=headers,cookies=cookies).text
+        response = requests.get(url,headers=headers,cookies=cookies,timeout=5).text
         # print(response)
         soup = BeautifulSoup(response,'lxml')
         all_tr = soup.find_all("tr")
@@ -117,7 +117,7 @@ def crawl(url, ip_list):
                 food_type = txt.find_all("span", class_="tag")[0].get_text()
                 location = txt.find_all("span", class_="tag")[1].get_text()
                 address = txt.find("span", class_="addr").get_text()
-                if star != "0":
+                if txt.find("span", class_='comment-list'):
                     taste = txt.find("span", class_='comment-list').find_all("b")[0].get_text()
                     environment = txt.find("span", class_='comment-list').find_all("b")[1].get_text()
                     service = txt.find("span", class_='comment-list').find_all("b")[2].get_text()
@@ -144,7 +144,6 @@ def crawl(url, ip_list):
                 lock.release()
             except Exception as e:
                 print(e)
-                pass
 
     except Exception:
         print(str(ip)+"不可用,剩余ip数："+str(len(ip_list)))
@@ -157,8 +156,8 @@ def crawl(url, ip_list):
         crawl(url, ip_list)
     else:
         print(str(ip) + "可用###剩余ip数：" + str(len(ip_list)) + "###网络状态：" + str(response.status_code))
-        print(usa)
-        if response.status_code==403:
+        # print(usa)
+        if response.status_code!=200:
             crawl(url, ip_list)
             # pass
             # if ip in ip_list:
@@ -169,7 +168,7 @@ def get_type_list(file):
     file = open(file,encoding="utf-8")
     type_list =[]
     for line in file:
-        type_list.append(line.strip().split(":")[-1])
+        type_list.append(line.strip())
     return type_list
 
 def get_ip_text(file):
@@ -184,38 +183,52 @@ def get_ip_text(file):
 
 def get_page(url):
     headers = {
-                'Cookie': '_lxsdk_cuid=1605e0182a1c8-0dcddc996964e2-5b452a1d-144000-1605e0182a1c8; _lxsdk=1605e0182a1c8-0dcddc996964e2-5b452a1d-144000-1605e0182a1c8; _hc.v=4fcafd03-8373-d150-6954-d7986b392b47.1513405645; s_ViewType=10; cy=2; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; _lxsdk_s=16064b2eea8-a3f-e63-0fe%7C%7C30',
+                'Cookie': 'showNav=#nav-tab|0|0; navCtgScroll=0; _lxsdk_cuid=1605e56c7b779-0dd789ebd32644-b7a103e-100200-1605e56c7b9c8; _lxsdk=1605e56c7b779-0dd789ebd32644-b7a103e-100200-1605e56c7b9c8; _hc.v=12ed2395-1f5f-af9f-a3f2-cabf60795723.1513411234; s_ViewType=10; cy=2; _lx_utm=utm_source%3DBaidu%26utm_medium%3Dorganic; _lxsdk_s=160729839af-4ca-e76-5c0%7C%7C29',
                 "Referer": "http://www.dianping.com/beijing/food",
-                "User-Agent":'Opera/9.25 (Windows NT 6.0; U; en)' ,
+                "User-Agent":'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.84 Safari/537.36' ,
                 }
-    time.sleep(2)
+
     try:
-        response = requests.get(url, headers=headers).text
-        soup = BeautifulSoup(response, 'lxml')
+        response = requests.get(url, headers=headers,timeout=7)
+        soup = BeautifulSoup(response.text, 'lxml')
         page = soup.find("div", class_="page").find_all("a", class_="PageLink")[-1].get_text()
+        # if response.status_code==200:
         return page
-    except:
-        return False
+
+    except Exception as e:
+        print(e)
+        return ""
 
 if __name__ == '__main__':
     lock = threading.Lock()
-    IP_LIST =get_ip_text("dz_dianping.txt")
-    type_list = get_type_list("dianping_meishi.txt")
-    local_list = get_type_list("meishi.txt")
+    IP_LIST =get_ip_text("ip_kuai.txt")
+    url_list = get_type_list("page.txt")
+    # local_list = get_type_list("meishi.txt")
+    for item in url_list:
+        print("正在处理："+item)
+        url_a = item.split(",")[0]
+        page = item.split(",")[1].strip()
     # type_list = list(reversed(type_list))
     # print(local_list)
-    for type in type_list:
-        for local in local_list:
-            url_a = "http:" + type +"r"+local
-            page = get_page(url_a)
-            if page:
-                print(page)
-                for page in range(1, int(page)+1):
-                    url = "http:" + type +"r"+local+"o2p" + str(page)
-                    crawl(url,IP_LIST)
-                    # t1 = threading.Thread(target=crawl, args=(url, IP_LIST))
-                    # t1.start()
-                    # time.sleep(0.1)
+    # for type in type_list:
+    #     for local in local_list:
+    #         print(local)
+    #         url_a = "http:" + type +"r"+local
+    #         page = get_page(url_a)
+    #         if page:
+    #             print(page)
+    #             time.sleep(2)
+        for i in range(2, int(page)+1):
+            url = url_a+"p" + str(i)
+            # crawl(url,IP_LIST)
+            t1 = threading.Thread(target=crawl, args=(url, IP_LIST))
+            t1.start()
+            time.sleep(1)
+    # else:
+    #     print(url_a+"未得到page")
+    #     with open("error.txt","a",encoding="utf-8") as f:
+    #         f.write(url_a+"\n")
+    time.sleep(100000)
     # for i in range(1,1000):
     #     t1 = threading.Thread(target=test_ip, args=(i, IP_LIST))
     #     t1.start()
